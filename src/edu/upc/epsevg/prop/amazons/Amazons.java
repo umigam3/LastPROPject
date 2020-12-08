@@ -25,6 +25,7 @@ public class Amazons {
                 
                 new AmazonsBoard(player1 , player2, 10, Level.QUARTERBOARD);
                 
+                System.out.println("Commit");
             }
         });
     }
