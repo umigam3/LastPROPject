@@ -13,6 +13,7 @@ import edu.upc.epsevg.prop.amazons.CellType;
 import edu.upc.epsevg.prop.amazons.GameStatus;
 import edu.upc.epsevg.prop.amazons.IPlayer;
 import edu.upc.epsevg.prop.amazons.Move;
+import edu.upc.epsevg.prop.amazons.SearchType;
 import java.awt.Point;
 import java.util.ArrayList;
 
@@ -37,16 +38,17 @@ public class LastPROPject implements IPlayer {
         // Obtenim els valors necessaris per a fer la simulació
         int valor = -100000, heuristica = 0;
         int numberOfNodesExplored = 0, maxDepthReached = 2;
-        Move bestmove;
+        Point amazonFrom = new Point (0, 0), amazonTo = new Point (0, 0), arrowTo = new Point (0, 0);
+        Move bestmove = new Move(amazonFrom, amazonTo, arrowTo, numberOfNodesExplored, maxDepthReached, SearchType.MINIMAX);
         
         // Recorrem les diverses fitxes del tauler
         int qn = s.getNumberOfAmazonsForEachColor();
         CellType color = s.getCurrentPlayer();
         for (int q = 0; q < qn; ++q) {
             // Obtenim la coordenada de la fitxa amb el color i el seu index
-            Point fitxa = s.getAmazon(color, q);
+            amazonFrom = s.getAmazon(color, q);
             // Creem un vector dels posibles moviments de cada fitxa
-            ArrayList<Point> a = s.getAmazonMoves(fitxa, false);
+            ArrayList<Point> a = s.getAmazonMoves(amazonFrom, false);
             
             // Recorrem els posibles moviments de cada fitxa
             for (int i = 0; i < a.size(); ++i) {
@@ -55,46 +57,35 @@ public class LastPROPject implements IPlayer {
                 // Creem una copia del tauler per a poder explorar una jugada
                 GameStatus mov_fitxa = new GameStatus(s);
                 // Movem la fitxa i ho anem fent amb totes les posibles tirades
-                mov_fitxa.moveAmazon(fitxa, a.get(i));
+                mov_fitxa.moveAmazon(amazonFrom, a.get(i));
+                amazonTo = a.get(i);
                 
                 // Recorrem el tauler per veure les posicions buides per a posar la flexa
                 for (int x = 0; x < s.getSize(); ++x) {
                     for (int y = 0; y < s.getSize(); ++y) {
-                        Point p = java.awt.Point[x=x, y=y];
-                        if (s.getPos(p))
+                        if (mov_fitxa.getPos(x, y) == CellType.EMPTY) {
+                            Point coord = new Point (x,y);
+                            mov_fitxa.placeArrow(coord);
+                        }
                     }
                 }
                 
-                heuristica = MinValor(mov_fitxa, color, fitxa, a.get(i), arrowTo, numberOfNodesExplored, maxDepthReached-1);
+                heuristica = MinValor(mov_fitxa, color, amazonFrom, amazonTo, arrowTo, numberOfNodesExplored, maxDepthReached-1);
                 
                 if (valor < heuristica) {
                     //Elegir el mejor mov
-                    bestmove = new Move(fitxa, a.get(i), arrowTo, numberOfNodesExplored, maxDepthReached, SearchType.MINIMAX);
+                    bestmove = new Move(amazonFrom, amazonTo, arrowTo, numberOfNodesExplored, maxDepthReached, SearchType.MINIMAX);
                     valor = heuristica;
                 }
             }
         }
-        
         return bestmove;
     }
     
-    /*
+    
     private int MinValor(GameStatus s, int color, Point amazonFrom, Point amazonTo, int numberOfNodesExplored, int maxDepthReached){
-        if (profunditat == 0 || status.isGameOver()) {
-            return heuristica();
-        }
-        // Creem un valor enter molt gran suficient per a la heuristica
-        int valor = 100000;
-        // Mirem totes les fitxes amb totes les posibles solucions
-        for (int ficha = 0; ficha < 4; ++ficha) {
-            s.getAmazonMoves(ficha, false);
-            GameStatus mov_ficha = new GameStatus(s);
-            move()
+        
     
-            valor = Math.min()
-        }
-    
-        return valor;
         for (int colmin = 0; colmin < t.getMida(); ++colmin) {
             // Si es pot fer el moviment creem un nou taulell i fem el moviment
             if (t.movpossible(colmin)){
