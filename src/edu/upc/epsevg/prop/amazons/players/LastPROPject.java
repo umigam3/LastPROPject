@@ -14,11 +14,12 @@ import edu.upc.epsevg.prop.amazons.GameStatus;
 import edu.upc.epsevg.prop.amazons.IPlayer;
 import edu.upc.epsevg.prop.amazons.Move;
 import java.awt.Point;
-import java.util.Random;
+import java.util.ArrayList;
 
 public class LastPROPject implements IPlayer {
 
     String name;
+    int prof;
 
     public LastPROPject(String name) {
         this.name = name;
@@ -35,26 +36,50 @@ public class LastPROPject implements IPlayer {
     public Move move(GameStatus s) {
         // Obtenim els valors necessaris per a fer la simulació
         int valor = -100000, heuristica = 0;
-        CellType color = s.getCurrentPlayer();
-        int qn = s.getNumberOfAmazonsForEachColor();
+        int numberOfNodesExplored = 0, maxDepthReached = 2;
+        Move bestmove;
         
-        // Realitzem tots els moviments possibls
+        // Recorrem les diverses fitxes del tauler
+        int qn = s.getNumberOfAmazonsForEachColor();
+        CellType color = s.getCurrentPlayer();
         for (int q = 0; q < qn; ++q) {
-            Point ficha = getAmazon(color, q);
-            ArrayList<Point> a = s.getAmazonMoves(ficha, false);
+            // Obtenim la coordenada de la fitxa amb el color i el seu index
+            Point fitxa = s.getAmazon(color, q);
+            // Creem un vector dels posibles moviments de cada fitxa
+            ArrayList<Point> a = s.getAmazonMoves(fitxa, false);
+            
+            // Recorrem els posibles moviments de cada fitxa
             for (int i = 0; i < a.size(); ++i) {
-                GameStatus mov_ficha = new GameStatus(s);
-                mov_ficha.moveAmazon(ficha, a.get(i));
-                move()
+                // Cada cop explorem un node més
+                ++numberOfNodesExplored;
+                // Creem una copia del tauler per a poder explorar una jugada
+                GameStatus mov_fitxa = new GameStatus(s);
+                // Movem la fitxa i ho anem fent amb totes les posibles tirades
+                mov_fitxa.moveAmazon(fitxa, a.get(i));
+                
+                // Recorrem el tauler per veure les posicions buides per a posar la flexa
+                for (int x = 0; x < s.getSize(); ++x) {
+                    for (int y = 0; y < s.getSize(); ++y) {
+                        Point p = java.awt.Point[x=x, y=y];
+                        if (s.getPos(p))
+                    }
+                }
+                
+                heuristica = MinValor(mov_fitxa, color, fitxa, a.get(i), arrowTo, numberOfNodesExplored, maxDepthReached-1);
+                
+                if (valor < heuristica) {
+                    //Elegir el mejor mov
+                    bestmove = new Move(fitxa, a.get(i), arrowTo, numberOfNodesExplored, maxDepthReached, SearchType.MINIMAX);
+                    valor = heuristica;
+                }
             }
-            valor = Math.min()
         }
         
-        return null;
+        return bestmove;
     }
     
     /*
-    private int MinValor(GameStatus s, int color, int profunditat){
+    private int MinValor(GameStatus s, int color, Point amazonFrom, Point amazonTo, int numberOfNodesExplored, int maxDepthReached){
         if (profunditat == 0 || status.isGameOver()) {
             return heuristica();
         }
@@ -116,6 +141,11 @@ public class LastPROPject implements IPlayer {
     }
     */
     
+    // Heuristica
+    public int heuristica() {
+        return 0;
+    }
+    
     /**
      * Ens avisa que hem de parar la cerca en curs perquè s'ha exhaurit el temps
      * de joc.
@@ -123,7 +153,7 @@ public class LastPROPject implements IPlayer {
     @Override
     public void timeout() {
         // Bah! Humans do not enjoy timeouts, oh, poor beasts !
-        System.out.println("Bah! You are so slow...");
+        System.out.println("No timeout at the time");
     }
 
     /**
