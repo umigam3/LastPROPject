@@ -2,6 +2,7 @@ package edu.upc.epsevg.prop.amazons;
 
 import edu.upc.epsevg.prop.amazons.players.HumanPlayer;
 import edu.upc.epsevg.prop.amazons.players.CarlinhosPlayer;
+import edu.upc.epsevg.prop.amazons.players.LastPROPject;
 import edu.upc.epsevg.prop.amazons.players.RandomPlayer;
 import javax.swing.SwingUtilities;
 
@@ -20,10 +21,10 @@ public class Amazons {
             @Override
             public void run() {
                 
-                IPlayer player1 = new HumanPlayer("Snail");
-                IPlayer player2 = new CarlinhosPlayer();
-                
-                new AmazonsBoard(player1 , player2, 10, Level.QUARTERBOARD);
+                IPlayer player1 = new LastPROPject("LastPROPject");
+                IPlayer player2 = new RandomPlayer("Snail");
+
+                new AmazonsBoard(player1 , player2, 10, Level.FULL_BOARD);
                 
                 System.out.println("Commit");
             }
