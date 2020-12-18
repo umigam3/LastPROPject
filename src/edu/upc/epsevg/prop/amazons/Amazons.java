@@ -22,9 +22,9 @@ public class Amazons {
             public void run() {
                 
                 IPlayer player1 = new LastPROPject("LastPROPject");
-                IPlayer player2 = new RandomPlayer("Snail");
+                IPlayer player2 = new CarlinhosPlayer();
 
-                new AmazonsBoard(player1 , player2, 10, Level.FULL_BOARD);
+                new AmazonsBoard(player1 , player2, 10, Level.QUARTERBOARD);
                 
                 System.out.println("Commit");
             }
