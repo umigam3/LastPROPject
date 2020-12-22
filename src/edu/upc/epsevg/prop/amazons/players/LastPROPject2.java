@@ -1,8 +1,3 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 package edu.upc.epsevg.prop.amazons.players;
 
 /**
@@ -18,13 +13,16 @@ import edu.upc.epsevg.prop.amazons.SearchType;
 import java.awt.Point;
 import java.util.ArrayList;
 
-public class LastPROPject implements IPlayer, IAuto {
+public class LastPROPject2 implements IPlayer, IAuto {
 
     String name;
-    private GameStatus s;
-    private int profunditat = 4;
+    private boolean timeout = false;
+    private int nodesExplorats;
+    private int heu;
+    
+    CellType player;
 
-    public LastPROPject(String name) {
+    public LastPROPject2(String name) {
         this.name = name;
     }
 
@@ -38,71 +36,83 @@ public class LastPROPject implements IPlayer, IAuto {
     @Override
     public Move move(GameStatus s) {
         // Obtenim els valors necessaris per a fer la simulació
-        int valor = -100000, heu = 0;
-        int numberOfNodesExplored = 0;
-        Point amazonFrom = new Point (0, 0), amazonTo = new Point (0, 0), arrowTo = new Point (0, 0);
-        Move bestmove = new Move(amazonFrom, amazonTo, arrowTo, numberOfNodesExplored, profunditat, SearchType.MINIMAX);
+        int valor = -100000;
+        int maxDepthReached;
+        CellType color = s.getCurrentPlayer();
+        Point amazonFrom, amazonTo, arrowTo;
+        Point amazonFromFinal = new Point (0, 0), amazonToFinal = new Point (0, 0), arrowToFinal = new Point (0, 0);
         Float alfa = Float.NEGATIVE_INFINITY, beta = Float.POSITIVE_INFINITY;
 
-        // Recorrem les diverses fitxes del tauler
-        int qn = s.getNumberOfAmazonsForEachColor();
-        CellType color = s.getCurrentPlayer();
-
-        for (int q = 0; q < qn; ++q) {
-            // Obtenim la coordenada de la fitxa amb el color i el seu index
-            amazonFrom = s.getAmazon(color, q);
-
-            // Creem un vector dels posibles moviments de cada fitxa
-            ArrayList<Point> a = s.getAmazonMoves(amazonFrom, false);
+        // Variables globals
+        int profunditat = 0;
+        timeout = false;
+        player = color;
+        nodesExplorats = 0;
+        
+        while (true) {
+            ++profunditat;
+            // Recorrem les diverses fitxes del tauler
+            int qn = s.getNumberOfAmazonsForEachColor();            
             
-            // Recorrem els posibles moviments de cada fitxa
-            for (int i = 0; i < a.size(); ++i) {
-                
-                // Creem una copia del tauler per a poder explorar una jugada
-                GameStatus mov_fitxa = new GameStatus(s);
-                
-                // Movem la fitxa i ho anem fent amb totes les posibles tirades
-                mov_fitxa.moveAmazon(amazonFrom, a.get(i));
-                amazonTo = a.get(i);
-                
-                // Recorrem el tauler per veure les posicions buides per a posar la flexa
-                for (int x = 0; x < s.getSize(); ++x) {
-                    for (int y = 0; y < s.getSize(); ++y) {
-                        GameStatus put_fletxa = new GameStatus(mov_fitxa);
+            for (int q = 0; q < qn; ++q) {
+                // Obtenim la coordenada de la fitxa amb el color i el seu index
+                amazonFrom = s.getAmazon(color, q);
 
-                        if (mov_fitxa.getPos(x, y) == CellType.EMPTY) {
-                            
-                            // Creem una coordenada on anirem posant les fletxes                            
-                            Point coord = new Point (x,y);
-                            put_fletxa.placeArrow(coord);
-                            arrowTo = coord;
-                            
-                            // Cridem al MinValor per començar amb el algorisme minimax
-                            heu = MinValor(put_fletxa, color, amazonFrom, amazonTo, arrowTo, numberOfNodesExplored, profunditat-1, alfa, beta);
-                            
-                            if (valor < heu) {
-                                //Elegir el mejor mov
-                                bestmove = new Move(amazonFrom, amazonTo, arrowTo, numberOfNodesExplored, profunditat, SearchType.MINIMAX);
-                                valor = heu;
-                                System.out.println("Heuristica: "+heu);
+                // Creem un vector dels posibles moviments de cada fitxa
+                ArrayList<Point> a = s.getAmazonMoves(amazonFrom, false);
+
+                // Recorrem els posibles moviments de cada fitxa
+                for (int i = 0; i < a.size(); ++i) {
+
+                    // Creem una copia del tauler per a poder explorar una jugada
+                    GameStatus mov_fitxa = new GameStatus(s);
+
+                    // Movem la fitxa i ho anem fent amb totes les posibles tirades
+                    mov_fitxa.moveAmazon(amazonFrom, a.get(i));
+                    amazonTo = a.get(i);
+
+                    // Recorrem el tauler per veure les posicions buides per a posar la flexa
+                    for (int x = 0; x < s.getSize(); ++x) {
+                        for (int y = 0; y < s.getSize(); ++y) {
+                            GameStatus put_fletxa = new GameStatus(mov_fitxa);
+
+                            if (mov_fitxa.getPos(x, y) == CellType.EMPTY) {
+                                
+                                // Creem una coordenada on anirem posant les fletxes                            
+                                Point coord = new Point (x,y);
+                                put_fletxa.placeArrow(coord);
+                                arrowTo = coord;
+
+                                // Cridem al MinValor per començar amb el algorisme minimax
+                                maxDepthReached = profunditat;
+                                if (!timeout) heu = MinValor(put_fletxa, color, amazonFrom, amazonTo, arrowTo, maxDepthReached-1, alfa, beta);
+
+                                if (valor < heu) {
+                                    //Elegir el mejor mov
+                                    amazonFromFinal = new Point(amazonFrom);
+                                    amazonToFinal = new Point(amazonTo);
+                                    arrowToFinal = new Point(arrowTo);
+                                    valor = heu;
+                                }
                             }
                         }
                     }
                 }
             }
+        if (timeout) break;
         }
         
-        return bestmove;
+        return new Move(amazonFromFinal, amazonToFinal, arrowToFinal, nodesExplorats, profunditat, SearchType.MINIMAX);
     }
     
     
-    private int MinValor(GameStatus s, CellType color, Point amazonFrom, Point amazonTo, Point arrowTo, int numberOfNodesExplored, int profunditat, double alfa, double beta){
+    private int MinValor(GameStatus s, CellType color, Point amazonFrom, Point amazonTo, Point arrowTo, int maxDepthReached, double alfa, double beta){
         
+        color = s.getCurrentPlayer();
         // Obtenim els valors necessaris per a fer la simulació
         int valor = 100000;
-        if (profunditat == 0) return heuristica(s, numberOfNodesExplored);
-        color = s.getCurrentPlayer();
-        
+        if (maxDepthReached == 0) return heuristica(s);
+                
         // Recorrem les diverses fitxes del tauler
         int qn = s.getNumberOfAmazonsForEachColor();
         for (int q = 0; q < qn; ++q) {
@@ -114,8 +124,6 @@ public class LastPROPject implements IPlayer, IAuto {
             
             // Recorrem els posibles moviments de cada fitxa
             for (int i = 0; i < a.size(); ++i) {
-                // Cada cop explorem un node més
-                ++numberOfNodesExplored;
                 // Creem una copia del tauler per a poder explorar una jugada
 
                 GameStatus mov_fitxa = new GameStatus(s);
@@ -137,7 +145,7 @@ public class LastPROPject implements IPlayer, IAuto {
                             arrowTo = coord;
                             
                             // Cridem al MinValor agafant el max entre aquesta crida i el valor
-                            valor = Math.min(valor, MaxValor(put_fletxa, color, amazonFrom, amazonTo, arrowTo, numberOfNodesExplored, profunditat-1, alfa, beta));
+                            if (!timeout) valor = Math.min(valor, MaxValor(put_fletxa, color, amazonFrom, amazonTo, arrowTo, maxDepthReached-1, alfa, beta));
                             
                             // Poda alfa-beta
                             beta=Math.min(valor,beta);
@@ -151,12 +159,13 @@ public class LastPROPject implements IPlayer, IAuto {
         return valor;
     }
     
-    private int MaxValor(GameStatus s, CellType color, Point amazonFrom, Point amazonTo, Point arrowTo, int numberOfNodesExplored, int profunditat, double alfa, double beta){
+    private int MaxValor(GameStatus s, CellType color, Point amazonFrom, Point amazonTo, Point arrowTo, int maxDepthReached, double alfa, double beta){
         
         // Obtenim els valors necessaris per a fer la simulació
-        int valor = -100000;
-        if (profunditat == 0) return heuristica(s, numberOfNodesExplored);
         color = s.getCurrentPlayer();
+
+        int valor = -100000;
+        if (maxDepthReached == 0) return heuristica(s);
         
         // Recorrem les diverses fitxes del tauler
         int qn = s.getNumberOfAmazonsForEachColor();
@@ -186,14 +195,14 @@ public class LastPROPject implements IPlayer, IAuto {
                             arrowTo = coord;
                             
                             // Cridem al MinValor agafant el max entre aquesta crida i el valor
-                            valor = Math.max(valor, MinValor(put_fletxa, color, amazonFrom, amazonTo, arrowTo, numberOfNodesExplored, profunditat-1, alfa, beta));
+                            if (!timeout) valor = Math.max(valor, MinValor(put_fletxa, color, amazonFrom, amazonTo, arrowTo, maxDepthReached-1, alfa, beta));
                             
                             // Poda alfa-beta
                             alfa=Math.max(valor,alfa);
                             if(beta<=alfa) return valor;
                         }
                     }
-                }       
+                }
             }
         }
         
@@ -201,13 +210,13 @@ public class LastPROPject implements IPlayer, IAuto {
     }
     
     // Heuristica
-    public int heuristica(GameStatus s, int numberOfNodesExplored) {
-        ++numberOfNodesExplored;
+    public int heuristica(GameStatus s) {
+        ++nodesExplorats;
         // Heuristica del Amazons
         // Per començar obtenim els valors necessaris per a l'heuristica
         int res, res_contrari, total = 0;
         // Obtenim el color actual i la fitxa del PLAYER1 i el PLAYER 2
-        CellType color_contrari, color = s.getCurrentPlayer();
+        CellType color_contrari, color = player;
         Point fitxa, fitxa_contraria;
         
         // Obtenim el color contrari
@@ -227,9 +236,9 @@ public class LastPROPject implements IPlayer, IAuto {
             // Sistema d'anells
             for (int ring = 1; ring < 2; ++ring) {
                 // Cridem a la funció moviments amb la fitxa del color actual
-                res = moviments(s, fitxa, 1);
+                res = moviments(s, fitxa, ring);
                 // Cridem a la funció moviments amb la fitxa del color contrari
-                res_contrari = fletxa(s, fitxa_contraria, 1);
+                res_contrari = fletxa(s, fitxa_contraria, ring);
                 
                 // Anem sumant les heuristiques tretes per les dues funcions
                 total = total + res + res_contrari;
@@ -247,28 +256,28 @@ public class LastPROPject implements IPlayer, IAuto {
         
         for (int i = 0; i < cells; ++i) {
             Point empty = new Point (p.x - ring + i, p.y + ring);
-            if (isOnBoard(s, empty) && s.getPos(empty) == CellType.EMPTY) ++heuristica;
+            if (isOnBoard(s, empty) && s.getPos(empty) == CellType.EMPTY) heuristica = heuristica + 10;
         }
       
         for (int i = 0; i < cells; ++i) {
             Point empty = new Point (p.x - ring + i, p.y - ring);
-            if (isOnBoard(s, empty) && s.getPos(empty) == CellType.EMPTY) ++heuristica;
+            if (isOnBoard(s, empty) && s.getPos(empty) == CellType.EMPTY) heuristica = heuristica + 10;
         }
 
         for (int j = 0; j < cells - 2; ++j)
         {
             Point empty = new Point (p.x - ring, p.y - ring + j);
-            if (isOnBoard(s, empty) && s.getPos(empty) == CellType.EMPTY) ++heuristica;
+            if (isOnBoard(s, empty) && s.getPos(empty) == CellType.EMPTY) heuristica = heuristica + 10;
         }
         
         for (int j = 0; j < cells - 2; ++j)
         {
             Point empty = new Point (p.x + ring, p.y - ring + j);
-            if (isOnBoard(s, empty) && s.getPos(empty) == CellType.EMPTY) ++heuristica;
+            if (isOnBoard(s, empty) && s.getPos(empty) == CellType.EMPTY) heuristica = heuristica + 10;
         }
         
         //if (buides == 8) return 10000;
-        //if (s.isGameOver()) return 10000;
+        if (s.isGameOver() && s.GetWinner() == player) return 100000;
         return heuristica;
     }
     
@@ -278,28 +287,31 @@ public class LastPROPject implements IPlayer, IAuto {
         
         for (int i = 0; i < cells; ++i) {
             Point empty = new Point (p.x - ring + i, p.y + ring);
-            if (isOnBoard(s, empty) && s.getPos(empty) == CellType.EMPTY) heuristica = heuristica - 3; ++buides;
+            if (isOnBoard(s, empty) && s.getPos(empty) == CellType.EMPTY) heuristica = heuristica - 5; ++buides;
         }
       
         for (int i = 0; i < cells; ++i) {
+            //System.out.println("Fitxa: "+p);
             Point empty = new Point (p.x - ring + i, p.y - ring);
-            if (isOnBoard(s, empty) && s.getPos(empty) == CellType.EMPTY) heuristica = heuristica - 3; ++buides;
+            //System.out.println("Empty: "+empty);
+            if (isOnBoard(s, empty) && s.getPos(empty) == CellType.EMPTY) heuristica = heuristica - 5; ++buides;
         }
 
         for (int j = 0; j < cells - 2; ++j)
         {
             Point empty = new Point (p.x - ring, p.y - ring + j);
-            if (isOnBoard(s, empty) && s.getPos(empty) == CellType.EMPTY) heuristica = heuristica - 3; ++buides;
+            if (isOnBoard(s, empty) && s.getPos(empty) == CellType.EMPTY) heuristica = heuristica - 5; ++buides;
         }
         
         for (int j = 0; j < cells - 2; ++j)
         {
             Point empty = new Point (p.x + ring, p.y - ring + j);
-            if (isOnBoard(s, empty) && s.getPos(empty) == CellType.EMPTY) heuristica = heuristica - 3; ++buides;
+            if (isOnBoard(s, empty) && s.getPos(empty) == CellType.EMPTY) heuristica = heuristica - 5; ++buides;
         }
         
-        if (buides == 0) return 10000;
-        //if (s.isGameOver()) return 10000;
+        
+        if (buides <= 0) return 10000;
+        if (s.isGameOver() && s.GetWinner() == player) return 100000;
         return heuristica;
     }
     
@@ -320,8 +332,8 @@ public class LastPROPject implements IPlayer, IAuto {
      */
     @Override
     public void timeout() {
-        // Bah! Humans do not enjoy timeouts, oh, poor beasts !
-        //System.out.println("No timeout at the time");
+        // Timeout for LastPROPject !
+        timeout = true;
     }
 
     /**
@@ -334,3 +346,4 @@ public class LastPROPject implements IPlayer, IAuto {
         return "LastPROPject(" + name + ")";
     }
 }
+
